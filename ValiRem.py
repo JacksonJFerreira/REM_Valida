@@ -3,35 +3,65 @@ from tkinter import filedialog, messagebox
 import pandas as pd
 import os
 import openpyxl  # Para trabalhar diretamente com células em arquivos Excel
+import logging
 
-# Função para extrair informações de contrato e competência
+# Configuração do logging
+logging.basicConfig(
+    filename="script_logs.log",
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# Função para extrair informações de contrato e competência do REM
 def extrair_informacoes_rem(caminho_arquivo):
     try:
+        logging.info(f"Extraindo informações do arquivo REM: {caminho_arquivo}")
         wb = openpyxl.load_workbook(caminho_arquivo, data_only=True)
         ws = wb.active
+
         contrato = ws['Q11'].value
         competencia = ws['Q7'].value
+
+        if contrato is None or competencia is None:
+            raise ValueError("As células Q11 ou Q7 estão vazias no arquivo REM.")
+
+        logging.info(f"Contrato REM: {contrato}, Competência REM: {competencia}")
         return str(contrato), str(competencia)
     except Exception as e:
+        logging.error(f"Erro ao extrair informações do arquivo REM: {caminho_arquivo}. Erro: {e}")
         return None, None
 
+# Função para extrair informações de contrato e competência do SiFAC
 def extrair_informacoes_sifac(caminho_arquivo):
     try:
+        logging.info(f"Extraindo informações do arquivo SiFAC: {caminho_arquivo}")
         wb = openpyxl.load_workbook(caminho_arquivo, data_only=True)
         ws = wb.active
-        contrato = ws['C5'].value.replace("contrato:", "").strip()  # Remove o prefixo "contrato:"
-        competencia = ws['F5'].value.strip()
+
+        contrato = ws['C5'].value
+        competencia = ws['F5'].value
+
+        if contrato is None or competencia is None:
+            raise ValueError("As células C5 ou F5 estão vazias no arquivo SiFAC.")
+
+        # Remove o prefixo "contrato:" e limpa espaços
+        contrato = contrato.replace("contrato:", "").strip()
+        competencia = competencia.strip()
+
+        logging.info(f"Contrato SiFAC: {contrato}, Competência SiFAC: {competencia}")
         return contrato, competencia
     except Exception as e:
+        logging.error(f"Erro ao extrair informações do arquivo SiFAC: {caminho_arquivo}. Erro: {e}")
         return None, None
 
-# Função para verificar e registrar os resultados das planilhas
+# Função para verificar e registrar os resultados nas planilhas
 def verificar_e_registrar_planilhas():
     pasta_sifac = entrada_sifac.get()
     pasta_rem = entrada_rem.get()
 
     if not pasta_sifac or not pasta_rem:
         messagebox.showerror("Erro", "Por favor, selecione ambas as pastas.")
+        logging.error("As pastas de entrada não foram selecionadas.")
         return
 
     arquivos_sifac = [os.path.join(pasta_sifac, f) for f in os.listdir(pasta_sifac) if f.endswith('.xlsx')]
@@ -39,6 +69,7 @@ def verificar_e_registrar_planilhas():
 
     if not arquivos_sifac or not arquivos_rem:
         messagebox.showerror("Erro", "Não foram encontrados arquivos Excel em uma ou ambas as pastas.")
+        logging.error("Não foram encontrados arquivos Excel em uma ou ambas as pastas.")
         return
 
     mensagem_resultado = ""
@@ -58,6 +89,7 @@ def verificar_e_registrar_planilhas():
             # Validação de contrato e competência
             if contrato_rem == contrato_sifac and competencia_rem == competencia_sifac:
                 mensagem_resultado += f"Contrato e competência correspondem entre: {arquivo_rem} e {arquivo_sifac}.\n"
+                logging.info(f"Contrato e competência correspondem entre: {arquivo_rem} e {arquivo_sifac}.")
 
                 # Comparar os nomes dos funcionários
                 try:
@@ -77,20 +109,24 @@ def verificar_e_registrar_planilhas():
 
                 except Exception as e:
                     mensagem_resultado += f"Erro ao processar nomes entre: {arquivo_rem} e {arquivo_sifac}. Erro: {e}\n"
+                    logging.error(f"Erro ao processar nomes: {e}")
 
             else:
                 mensagem_resultado += f"Contrato ou competência não correspondem entre: {arquivo_rem} e {arquivo_sifac}.\n"
+                logging.warning(f"Contrato ou competência não correspondem entre: {arquivo_rem} e {arquivo_sifac}.")
 
     resultado.set(mensagem_resultado)
+    logging.info("Processamento concluído.")
 
 # Função para selecionar a pasta
 def selecionar_pasta(entry):
     pasta_selecionada = filedialog.askdirectory()
     entry.set(pasta_selecionada)
+    logging.info(f"Pasta selecionada: {pasta_selecionada}")
 
 # Interface gráfica
 janela = ctk.CTk()
-janela.title("Comparador de Planilhas Melhorado com Validação")
+janela.title("Comparador de Planilhas com Logs")
 
 entrada_sifac = ctk.StringVar()
 entrada_rem = ctk.StringVar()
