@@ -44,8 +44,7 @@ def extrair_informacoes_sifac(caminho_arquivo):
         if contrato is None or competencia is None:
             raise ValueError("As células C5 ou F5 estão vazias no arquivo SiFAC.")
 
-        # Remove o prefixo "contrato:" e limpa espaços
-        contrato = contrato.replace("contrato:", "").strip()
+        contrato = contrato.replace("contrato:", "").strip()  # Remove o prefixo "contrato:"
         competencia = competencia.strip()
 
         logging.info(f"Contrato SiFAC: {contrato}, Competência SiFAC: {competencia}")
@@ -96,16 +95,13 @@ def verificar_e_registrar_planilhas():
                     rem_df = pd.read_excel(arquivo_rem, sheet_name="REM - Memória de Cálculo HHER", skiprows=8)
                     sifac_df = pd.read_excel(arquivo_sifac, skiprows=7)
 
-                    # Obter nomes das colunas D
-                    nomes_rem = rem_df["D"].tolist()
-                    nomes_sifac = sifac_df["D"].tolist()
+                    nomes_rem = rem_df["D"].tolist()  # Coluna D dos arquivos REM
+                    nomes_sifac = sifac_df["D"].tolist()  # Coluna D dos arquivos SiFAC
 
-                    # Criar coluna de resultado
                     rem_df["Encontrado (SiFAC)"] = ["Sim" if nome in nomes_sifac else "Não" for nome in nomes_rem]
 
-                    # Salvar atualização no arquivo REM
                     with pd.ExcelWriter(arquivo_rem, engine="openpyxl", mode="a") as writer:
-                        rem_df.to_excel(writer, sheet_name="REM - Memória de Cálculo HHER", index=False, startcol=8, startrow=8)
+                        rem_df.to_excel(writer, sheet_name="REM - Memória de Cálculo HHER", index=False, startrow=8)
 
                 except Exception as e:
                     mensagem_resultado += f"Erro ao processar nomes entre: {arquivo_rem} e {arquivo_sifac}. Erro: {e}\n"
